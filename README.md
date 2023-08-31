@@ -4,10 +4,12 @@ This is a Python-based Telegram bot using the telethon library. The bot responds
 # Installation
 Clone the repo
 
-```git clone https://github.com/HexyeDEV/Telegram-Chatbot-Gpt4Free.git```
+```git clone https://github.com/flowerbling/tg-bot.git```
 After that go to the cloned repo directory.
 
-Edit the example.env file with:
+Add a new file .env file with:
+
+Example env file: example.env
 
 API_ID is your api id from https://my.telegram.org
 
