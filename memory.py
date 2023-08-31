@@ -11,7 +11,7 @@ class Memory:
 
     def insert(self, data, uuid):
         self.collection.add(documents=[data], ids=[uuid])
-    
+
     def find(self, query):
         q = self.collection.query(query_texts=[query], n_results=2)
         return q['documents']

@@ -7,7 +7,7 @@ import json
 import wolframalpha
 from memory import Memory
 from uuid import uuid4
-
+import socks
 load_dotenv()
 
 memory = Memory('BotMemories')
@@ -20,11 +20,13 @@ wolframalpha_app_id = getenv('WOLFRAMALPHA_APP_ID')
 if not api_id or not api_hash or not bot_token:
     raise Exception('API_ID, API_HASH and BOT_TOKEN must be set in .env file')
 
-client = TelegramClient('bot', api_id, api_hash)
+proxy = (socks.SOCKS5, '127.0.0.1', 7890)
+
+client = TelegramClient('bot', api_id, api_hash, proxy=proxy)
 
 DAN_JAILBREAK = False
 PLUGINS = False
-MEMORY = False
+MEMORY = True
 ROLE = ""
 plugins_dict = {
     "wolframalpha": "Wolframalpha plugin lets you perform math operations. If appropriate to use it, answer exactly with: \"[WOLFRAMALPHA <query> END]\" where query is the operation you need to solve. Examples: Input: Solve for x: 2x+3=5 Output: [WOLFRAMALPHA solve (2x+3=5) for x END] Input: A*2=B solve for B Output: [WOLFRAMALPHA solve (A*2=B) for B END]. Even if you got the input in a different language, always use english in the wolframalpha query.",
@@ -44,6 +46,7 @@ async def AiAgent(prompt, system_prompt=""):
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": prompt}
         ]
+    print(messages)
     full_text = await model.ChatCompletion(messages)
     return full_text
 
@@ -66,11 +69,11 @@ async def pls(event):
 async def pls_toggle(event):
     global PLUGINS
     PLUGINS = not PLUGINS
-    if PLUGINS == True and not wolframalpha_app_id or PLUGINS == True and wolframalpha_app_id == "TEST-APP":
+    if PLUGINS and not wolframalpha_app_id or PLUGINS and wolframalpha_app_id == "TEST-APP":
         await event.respond("You need to set a wolframalpha app id in the .env file to use plugins.")
         PLUGINS = False
         return
-    await event.respond("Plugins enabled" if PLUGINS == True else "Plugins disabled")
+    await event.respond("Plugins enabled" if PLUGINS else "Plugins disabled")
 
 @client.on(NewMessage(pattern='/jailbreak'))
 async def jailbreak(event):
@@ -129,12 +132,12 @@ async def role(event):
         await event.respond("Role set")
     except KeyError:
         await event.respond("Role not found")
-    
+
 @client.on(NewMessage(pattern='/memory'))
 async def memory_command(event):
     global MEMORY
     MEMORY = not MEMORY
-    await event.respond("Memory enabled" if MEMORY == True else "Memory disabled")
+    await event.respond("Memory enabled" if MEMORY else "Memory disabled")
 
 @client.on(NewMessage(pattern='/addmemory'))
 async def addmemory(event):
@@ -164,26 +167,26 @@ async def handler(e):
         prompt = e.text.replace(f'@{my_username}', '')
     msg = await e.respond('Thinking...')
     system_prompt = ""
-    if DAN_JAILBREAK == True and PLUGINS == True:
+    if DAN_JAILBREAK and PLUGINS:
         await msg.edit('You can\'t use both DAN and plugins at the same time.')
         return
-    if PLUGINS == True and MEMORY == True:
+    if PLUGINS and MEMORY:
         await msg.edit('You can\'t use both plugins and memory at the same time.')
         return
-    if DAN_JAILBREAK == True and ROLE != "":
+    if DAN_JAILBREAK and ROLE != "":
         await msg.edit('You can\'t use both DAN and roles at the same time.')
         return
-    if PLUGINS == True and ROLE != "":
+    if PLUGINS and ROLE != "":
         await msg.edit('You can\'t use both plugins and roles at the same time.')
         return
-    if DAN_JAILBREAK == True:
+    if DAN_JAILBREAK:
         system_prompt = DAN_PROMPT
-    if PLUGINS == True:
+    if PLUGINS:
         system_prompt = PLUGIN_PROMPT
     if ROLE != "":
         system_prompt = ROLE
         PLUGINS = False
-    if MEMORY == True:
+    if MEMORY:
         res = memory.find(prompt)
         if len(res) > 0 or res[0] != []:
             system_prompt = system_prompt + "To answer the next question these data may be relevant: "
@@ -201,12 +204,12 @@ async def handler(e):
             else:
                 result = next(res.results).text
             result = await AiAgent(plugins_second_question["wolframalpha"].replace("<input>", prompt).replace("<result>", result))
-            if MEMORY == True:
+            if MEMORY:
                 memory.insert(prompt, str(uuid4()))
                 memory.insert(result, str(uuid4()))
             await msg.edit(result)
             return
-        if MEMORY == True:
+        if MEMORY:
             memory.insert(prompt, str(uuid4()))
             memory.insert(result, str(uuid4()))
         await msg.edit(result)
