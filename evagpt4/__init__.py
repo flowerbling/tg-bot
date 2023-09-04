@@ -1,5 +1,5 @@
 import openai
-openai.api_key = "xxxxxx" # TODO replace to the real api key
+openai.api_key = "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" # TODO replace to the real api key
 
 class Model:
     def __init__(self):
@@ -14,8 +14,6 @@ class Model:
 
     # TODO replace openai to g4f
     async def ChatCompletion(self, messages):
-        self.payload["messages"] = messages
-
         results = openai.ChatCompletion.create(
             model="gpt-3.5-turbo-0613",
             messages=messages,
